@@ -87,7 +87,7 @@ export class EventsService {
   async getEventsWithWorkshops() {
     try {
       // Fetch all events
-      const events = await this.app.getDataSource().event.findMany();
+      const events = await this.getWarmupEvents();
 
       // Fetch workshops for all events
       const eventIds = events.map((event) => event.id);
@@ -178,6 +178,28 @@ export class EventsService {
     ```
      */
   async getFutureEventWithWorkshops() {
-    throw new Error("TODO task 2");
+    try {
+      const events = await this.getWarmupEvents();
+      // Fetch workshops for all events
+      const eventIds = events.map((event) => event.id);
+      const workshops = await this.app.getDataSource().workshop.findMany({
+        where: {
+          eventId: { in: eventIds },
+          start: { gt: new Date() },
+        },
+      });
+  
+      // Add workshops to corresponding events
+      const eventsWithWorkshops = events.map((event) => ({
+        ...event,
+        workshops: workshops.filter(
+          (workshop) => workshop.eventId === event.id
+        ),
+      }));
+  
+      return eventsWithWorkshops;
+    } catch (e) {
+      throw new Error(`Error while fetching future events with Workshops: ${e}`);
+    }
   }
 }
