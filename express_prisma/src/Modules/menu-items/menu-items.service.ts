@@ -1,5 +1,13 @@
 import App from "../../app";
 
+interface MenuItem {
+  id: number;
+  name: string;
+  url: string;
+  parentId: number | null;
+  createdAt: Date;
+  children?: MenuItem[];
+}
 export class MenuItemsService {
   constructor(protected app: App) {}
 
@@ -79,6 +87,34 @@ export class MenuItemsService {
   */
 
   async getMenuItems() {
-    throw new Error('TODO in task 3');
+    // Fetch all menu items from the database
+    const menuItems = await this.app.getDataSource().menuItem.findMany();
+
+    // Create a map of menu item IDs to their corresponding objects
+    const menuItemsById = new Map<number, MenuItem>(
+      menuItems.map((item) => [item.id, item])
+    );
+
+    // Group the menu items by their parent IDs
+    const menuItemsByParentId = menuItems.reduce(
+      (acc, item) => {
+        if (!item.parentId) {
+          // If the item has no parent, add it to the top level
+          acc.topLevel.push(item);
+        } else {
+          // Otherwise, add it to its parent's children array
+          const parent = menuItemsById.get(item.parentId) as MenuItem;
+          if (!parent.children) {
+            parent.children = [];
+          }
+          parent.children.push(item);
+        }
+        return acc;
+      },
+      { topLevel: [] } as { topLevel: MenuItem[] }
+    );
+
+    // Return the top-level menu items
+    return menuItemsByParentId.topLevel;
   }
 }
