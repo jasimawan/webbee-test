@@ -85,7 +85,30 @@ export class EventsService {
      */
 
   async getEventsWithWorkshops() {
-    throw new Error('TODO task 1');
+    try {
+      // Fetch all events
+      const events = await this.app.getDataSource().event.findMany();
+
+      // Fetch workshops for all events
+      const eventIds = events.map((event) => event.id);
+      const workshops = await this.app.getDataSource().workshop.findMany({
+        where: {
+          eventId: { in: eventIds },
+        },
+      });
+
+      // Add workshops to corresponding events
+      const eventsWithWorkshops = events.map((event) => ({
+        ...event,
+        workshops: workshops.filter(
+          (workshop) => workshop.eventId === event.id
+        ),
+      }));
+
+      return eventsWithWorkshops;
+    } catch (e) {
+      throw new Error(`Error while fetching events with Workshops: ${e}`);
+    }
   }
 
   /* TODO: complete getFutureEventWithWorkshops so that it returns events with workshops, that have not yet started
@@ -155,6 +178,6 @@ export class EventsService {
     ```
      */
   async getFutureEventWithWorkshops() {
-    throw new Error('TODO task 2');
+    throw new Error("TODO task 2");
   }
 }
