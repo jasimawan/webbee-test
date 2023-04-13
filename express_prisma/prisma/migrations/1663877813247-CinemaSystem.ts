@@ -33,10 +33,70 @@ export default class implements Migration {
      * As a cinema owner I dont want to configure the seating for every show
      */
 
-    throw new Error('TODO: implement migration in task 4');
+     await prisma.$executeRaw`
+      CREATE TABLE movies (
+        id SERIAL PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        description TEXT NOT NULL,
+        duration INT NOT NULL,
+        language VARCHAR(255) NOT NULL
+      );
+
+      CREATE TABLE showtimes (
+        id SERIAL PRIMARY KEY,
+        movie_id INT NOT NULL REFERENCES movies(id) ON DELETE CASCADE,
+        datetime TIMESTAMP NOT NULL,
+        room_number INT NOT NULL,
+        max_capacity INT NOT NULL,
+        price DECIMAL(10, 2) NOT NULL
+      );
+
+      CREATE TABLE bookings (
+        id SERIAL PRIMARY KEY,
+        showtime_id INT NOT NULL REFERENCES showtimes(id) ON DELETE CASCADE,
+        seat_number VARCHAR(255) NOT NULL,
+        seat_type VARCHAR(255) NOT NULL,
+        user_name VARCHAR(255) NOT NULL
+      );
+
+      CREATE TABLE seat_types (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        premium_percentage INT NOT NULL
+      );
+
+      CREATE TABLE room_layouts (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        description TEXT NOT NULL,
+        seating_arrangement JSONB NOT NULL
+      );
+
+      CREATE TABLE rooms (
+        id SERIAL PRIMARY KEY,
+        layout_id INT NOT NULL REFERENCES room_layouts(id) ON DELETE CASCADE,
+        name VARCHAR(255) NOT NULL,
+        number INT NOT NULL,
+        max_capacity INT NOT NULL
+      );
+
+      CREATE INDEX showtimes_datetime_idx ON showtimes(datetime);
+      CREATE INDEX showtimes_room_number_idx ON showtimes(room_number);
+      CREATE INDEX bookings_seat_number_idx ON bookings(seat_number);
+      CREATE INDEX bookings_seat_type_idx ON bookings(seat_type);
+      CREATE INDEX bookings_user_name_idx ON bookings(user_name);
+    `;
   }
 
   async down(prisma: PrismaClient) {
     // do nothing
+    await prisma.$executeRaw`
+      DROP TABLE IF EXISTS bookings;
+      DROP TABLE IF EXISTS showtimes;
+      DROP TABLE IF EXISTS movies;
+      DROP TABLE IF EXISTS seat_types;
+      DROP TABLE IF EXISTS rooms;
+      DROP TABLE IF EXISTS room_layouts;
+    `;
   }
 }
